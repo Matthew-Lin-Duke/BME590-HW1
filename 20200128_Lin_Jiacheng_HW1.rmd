@@ -6,8 +6,89 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set()
 ```
+
+### Question 2  
+#### *Briefly state the objective and main findings of this study (Yassour M, et al. 2016) using 2-3 sentences.*  
+This study aims to explore the response to born delivery methods and perturations of the infant gut microbiome during the first 3 years with a high-density longitudinal sampling. The group found that the relative abundance of *Bacteroidaceae* is signifacantly lower in the first 6 months among all cesarean section-born children and some of vaginally born children. Along with that, the groups analysis of the response to antibiotic treatments of the gut microbiome showed that antibiotic treatments could lead to less diverse and less stable gut microbiome, with antibiotic resistance genes rising during treatment.
+
+### Question 3
+#### *When DNA sequencing data is really large (which is the case a lot of times), it is often preferable to work with the zipped version of the files. Look the first 10 lines (header) of the zipped FASTQ file in a human-readable mode – without unzipping it.*  
+I am using a PC with Git Bash and really struggled for a while to find correct command to do this. Since the `gzcat` is not available on Git Bash, I am using `gzip` instead.
+```{bash}
+gzip -cd E000823_1.8.periodic.trimmo.60.um.1.fastq.gz | head -n 10
+```
+
+### Question 4
+#### *If your dataset is very large, it may be useful to extract a small subset of the original data to test out your code to save time and effort. Extract the first 100 lines of the FASTQ file and save it as `smallFQ.fastq`, without unzipping it.*
+```{bash}
+gzip -cd E000823_1.8.periodic.trimmo.60.um.1.fastq.gz | sed -n '1,100p' > smallFQ.fastq
+```
+### Question 5
+#### *Count the number of sequences (or reads) in the FASTQ file. Note that each sequence’s information is shown over 4 lines (Figure 2). You may choose to unzip the file first if you want, but it is not necessary to get the answer.*  
+The thought is to get the number of total lines in the FASTQ file and divide it by 4 to get the reads number. I have code as below and have no problem getting the correct output with `Run current chunk`. But the weird thing is that when I knit the rmd file, it reports `expr: syntax error` and it seems the knit has some problem with the variables in bash. I searched online about this problem for quite a long time but still confused. 
+```{bash}
+total_line=$(gzip -cd E000823_1.8.periodic.trimmo.60.um.1.fastq.gz | wc -l)
+reads=$(expr $total_line / 4)
+echo "The number of sequences (or reads) in the FASTQ file is: $reads"
+```
+
+But during the search, I found an one-line command to do this as below and it works well with knit. I still have no idea why knit doesn't work with variables.
+```{bash}
+echo "The number of sequences (or reads) in the FASTQ file is: $(expr $(gzip -cd E000823_1.8.periodic.trimmo.60.um.1.fastq.gz | wc -l) / 4)"
+```
+
+### Question 6
+#### *What is the size of the zipped FASTA file?*
+```{bash}
+echo "The size of the zipped FASTA file is: $(du -h E006493_35.8.fna.gz)" #-h for a readable unit
+```
+
+### Question 7
+#### *Unzip the FASTA file*
+```{bash}
+gzip -cd E006493_35.8.fna.gz > E006493_35.8.fasta
+```
+
+### Question 8
+#### *What is the size of the unzipped FASTA file?*
+```{bash}
+echo "The size of the unzipped FASTA file is: $(du -h E006493_35.8.fasta )" #-h for a readable unit
+```
+
+### Question 9
+#### *Count the number of sequences in the FASTA file*  
+Since each sequence in FASTA file starts with `>`, the `grep` command is suitable for this question.
+```{bash}
+echo "The number of sequences in the FASTA file is: $(grep -c '>' E006493_35.8.fasta)"
+```
+However, I looked up the FASTA file in notepad++ editor and found the last index is 41260, which means totally 41261 reads in the file. Kind of weird since the `>` only shows up 41255 times. I guess some reads might be deleted during the sequencing.
+
+### Question 10
+#### *What is the content of line 4321 of the FASTA file?*
+```{bash}
+echo "The content of line 4321 of the FASTA file is: $(sed -n '4321p' E006493_35.8.fasta)"
+```
+
+### Question 11
+#### *How many of the 16S rRNA sequencing reads in the FASTA file are from Bacteroides fragilis?*
+According to the hint, search lines with `CGTAAAATTGCAGTTGA` .
+```{bash}
+echo "The number of 16S rRNA sequencing reads from Bacteroides fragilis: $(grep -c "CGTAAAATTGCAGTTGA" E006493_35.8.fasta)"
+```
+**This answer should be correct only if the `CGTAAAATTGCAGTTGA` chain shows just once in every reads when it is *Bacteroides fragilis*. **
+
+### Question 12
+#### *The current FASTA file stores the raw sequence spanning over multiple lines for readability. For instance, lines 2 - 6 of the given FASTA file compose one sequence. However, single line sequences are easier to manipulate in downstream data analysis. Write a code to convert this multiline FASTA file into a single line FASTA file and save this new single line FASTA file named as singleFA.fasta. Briefly explain what each part of your code does.*
+Use `awk` to linearize the fasta sequence:  
+The `/^>/` means the instruction to edit lines start with `>`, which is the first character of each read. Then the `if(NR>1) print "";` is using the NR (numbered row) to print a new line only for non-first read. Next, the `printf("%s\n",$0);` is to add the header line to the new line created, and switch to the next line. The `next;` is to end the operation on this line and go to next line in the original FASTA file. Then the operation objective is the actual sequence, which is not started with `>`. The command will just add them to the second line until reaches next header. Once reaching next header, print a line break at the end of sequence and start over the whole operation. The whole operation reads records from *E006493_35.8.fasta* and write the converted records to *single_line.fasta*.
+```{bash}
+awk '/^>/ { if(NR>1) print ""; printf("%s\n",$0); next; } { printf("%s",$0);}  END {printf("\n");}'< E006493_35.8.fasta > single_line.fasta
+```
+
+
+
 
 
 
