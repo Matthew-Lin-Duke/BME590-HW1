@@ -369,6 +369,8 @@ summary {
 </div>
 
 
+<div id="part-1-local-bash-manipulation" class="section level2">
+<h2>Part 1: Local bash manipulation</h2>
 <div id="question-2" class="section level3">
 <h3>Question 2</h3>
 <div id="briefly-state-the-objective-and-main-findings-of-this-study-yassour-m-et-al.-2016-using-2-3-sentences." class="section level4">
@@ -398,9 +400,7 @@ summary {
 <h3>Question 4</h3>
 <div id="if-your-dataset-is-very-large-it-may-be-useful-to-extract-a-small-subset-of-the-original-data-to-test-out-your-code-to-save-time-and-effort.-extract-the-first-100-lines-of-the-fastq-file-and-save-it-as-smallfq.fastq-without-unzipping-it." class="section level4">
 <h4><em>If your dataset is very large, it may be useful to extract a small subset of the original data to test out your code to save time and effort. Extract the first 100 lines of the FASTQ file and save it as <code>smallFQ.fastq</code>, without unzipping it.</em></h4>
-<pre class="bash"><code>gzip -cd E000823_1.8.periodic.trimmo.60.um.1.fastq.gz | sed -n &#39;1,100p&#39; &gt; smallFQ.fastq
-wc -l smallFQ.fastq</code></pre>
-<pre><code>## 100 smallFQ.fastq</code></pre>
+<pre class="bash"><code>gzip -cd E000823_1.8.periodic.trimmo.60.um.1.fastq.gz | sed -n &#39;1,100p&#39; &gt; smallFQ.fastq</code></pre>
 </div>
 </div>
 <div id="question-5" class="section level3">
@@ -463,16 +463,139 @@ echo &quot;The number of sequences (or reads) in the FASTQ file is: $reads&quot;
 <h3>Question 11</h3>
 <div id="how-many-of-the-16s-rrna-sequencing-reads-in-the-fasta-file-are-from-bacteroides-fragilis" class="section level4">
 <h4><em>How many of the 16S rRNA sequencing reads in the FASTA file are from Bacteroides fragilis?</em></h4>
-<p>According to the hint, search lines with <code>CGTAAAATTGCAGTTGA</code> .</p>
-<pre class="bash"><code>echo &quot;The number of 16S rRNA sequencing reads from Bacteroides fragilis: $(grep -c &quot;CGTAAAATTGCAGTTGA&quot; E006493_35.8.fasta)&quot;</code></pre>
-<pre><code>## The number of 16S rRNA sequencing reads from Bacteroides fragilis: 0</code></pre>
-<p><strong>This answer should be correct only if the <code>CGTAAAATTGCAGTTGA</code> chain shows just once in every reads when it is <em>Bacteroides fragilis</em>. </strong></p>
+<p>According to the hint, search lines with <code>CGTAAAATTGCAGTTGA</code> . <strong>This answer should be correct only if the <code>CGTAAAATTGCAGTTGA</code> chain shows just once in every reads when it is <em>Bacteroides fragilis</em>. </strong></p>
+<pre class="bash"><code>echo &quot;The number of reads from Bacteroides fragilis: $(grep -c &#39;CGTAAAATTGCAGTTGA&#39; E006493_35.8.fasta)&quot;
+#Be careful with the &#39;&#39; or &quot;&quot; when use the whole command as an element of  echo. In this case, running the code chunk is totally fine but knitr doesn&#39;t work with &quot;CGTAAAATTGCAGTTGA&quot;.</code></pre>
+<pre><code>## The number of reads from Bacteroides fragilis: 11885</code></pre>
 </div>
 </div>
 <div id="question-12" class="section level3">
 <h3>Question 12</h3>
 <div id="the-current-fasta-file-stores-the-raw-sequence-spanning-over-multiple-lines-for-readability.-for-instance-lines-2---6-of-the-given-fasta-file-compose-one-sequence.-however-single-line-sequences-are-easier-to-manipulate-in-downstream-data-analysis.-write-a-code-to-convert-this-multiline-fasta-file-into-a-single-line-fasta-file-and-save-this-new-single-line-fasta-file-named-as-singlefa.fasta.-briefly-explain-what-each-part-of-your-code-does." class="section level4">
 <h4><em>The current FASTA file stores the raw sequence spanning over multiple lines for readability. For instance, lines 2 - 6 of the given FASTA file compose one sequence. However, single line sequences are easier to manipulate in downstream data analysis. Write a code to convert this multiline FASTA file into a single line FASTA file and save this new single line FASTA file named as singleFA.fasta. Briefly explain what each part of your code does.</em></h4>
+<p>Use <code>awk</code> to linearize the fasta sequence:<br />
+The <code>/^&gt;/</code> means the instruction to edit lines start with <code>&gt;</code>, which is the first character of each read. Then the <code>if(NR&gt;1) print &quot;&quot;;</code> is using the NR (numbered row) to print a new line only for non-first read. Next, the <code>printf(&quot;%s\n&quot;,$0);</code> is to add the header line to the new line created, and switch to the next line. The <code>next;</code> is to end the operation on this line and go to next line in the original FASTA file. Then the operation objective is the actual sequence, which is not started with <code>&gt;</code>. The command will just add them to the second line until reaches next header. Once reaching next header, print a line break at the end of sequence and start over the whole operation. The whole operation reads records from <em>E006493_35.8.fasta</em> and write the converted records to <em>single_line.fasta</em>.</p>
+<pre class="bash"><code>awk &#39;/^&gt;/ { if(NR&gt;1) print &quot;&quot;; printf(&quot;%s\n&quot;,$0); next; } { printf(&quot;%s&quot;,$0);}  END {printf(&quot;\n&quot;);}&#39;&lt; E006493_35.8.fasta &gt; singleFA.fasta</code></pre>
+</div>
+</div>
+<div id="question-13" class="section level3">
+<h3>Question 13</h3>
+<div id="how-many-rows-are-there-in-the-new-single-line-fasta-file-singlefa.fasta" class="section level4">
+<h4><em>How many rows are there in the new single line FASTA file singleFA.fasta?</em></h4>
+<p>Use the <code>wc</code> command to count the number of rows in the new file, which is exactly 2 times of the number of sequences.</p>
+<pre class="bash"><code>echo &quot;The number of rows in the new single line FASTA file singleFA.fasta: $(wc -l singleFA.fasta)&quot;</code></pre>
+<pre><code>## The number of rows in the new single line FASTA file singleFA.fasta: 82510 singleFA.fasta</code></pre>
+</div>
+</div>
+<div id="question-14" class="section level3">
+<h3>Question 14</h3>
+<div id="run-the-code-below-to-import-an-example-1000-genomes-variant-data-file-and-unzip-it." class="section level4">
+<h4><em>Run the code below to import an example 1000 genomes variant data file and unzip it.</em></h4>
+<pre class="bash"><code>wget ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/pilot_data/release/2010_07/trio/snps/trio.2010_06.ychr.sites.vcf.gz
+gzip -cd trio.2010_06.ychr.sites.vcf.gz &gt; trio.2010_06.ychr.sites.vcf</code></pre>
+</div>
+</div>
+<div id="question-15" class="section level3">
+<h3>Question 15</h3>
+<div id="take-a-look-at-the-first-few-lines-of-the-vcf-file.-what-is-the-reference-of-this-data" class="section level4">
+<h4><em>Take a look at the first few lines of the vcf file. What is the reference of this data?</em></h4>
+<pre class="bash"><code>head -n 5 trio.2010_06.ychr.sites.vcf</code></pre>
+<pre><code>## ##fileformat=VCFv4.0
+## ##fileDate=20100610 
+## ##source=glfTools v3
+## ##reference=1000GenomesPilot-NCBI36 
+## ##phasing=NA</code></pre>
+<p>The reference of this dataset is the <code>1000GenomesPilot-NCBI36</code>.</p>
+</div>
+</div>
+<div id="question-16" class="section level3">
+<h3>Question 16</h3>
+<div id="how-many-entries-have-quality-scores-higher-than-50" class="section level4">
+<h4><em>How many entries have quality scores higher than 50?</em></h4>
+<p>Well, for this question and question 17, using the basic bash commands to filter out the sequences is not so wise. I chose to go linux(Windows Subsystem for Linux, Ubuntu) and installed the package <code>bcftools</code>. <code>bcftools</code> is a program for variant calling and manipulating files in the Variant Call Format (VCF) and its binary counterpart BCF, developed by samtools. It really took a while to install all the packages needed.<br />
+Within the bash of Ubuntu, simply run commands as below, we can easily get the number of entries have quality scores higher than 50.<strong>The answer is 121.</strong></p>
+<pre class="bash"><code>bcftools query -i&#39;QUAL&gt;50&#39; -f&#39;%CHROM\n&#39; trio.2010_06.ychr.sites.vcf | wc -l</code></pre>
+</div>
+</div>
+<div id="question-17" class="section level3">
+<h3>Question 17</h3>
+<div id="how-many-entries-are-there-between-positions-10000000-and-20000000" class="section level4">
+<h4><em>How many entries are there between positions 10,000,000 and 20,000,000?</em></h4>
+<p>Same as question 16, using <code>query</code> function in <code>bcftools</code> to filter the result.<strong>The answer is 507.</strong></p>
+<pre class="bash"><code>bcftools query -i&#39;POS&gt;=10000000 &amp;&amp; POS&lt;=20000000&#39; -f&#39;%CHROM\n&#39; trio.2010_06.ychr.sites.vcf | wc -l</code></pre>
+</div>
+</div>
+</div>
+<div id="part-2-shell-scripting" class="section level2">
+<h2>Part 2: Shell Scripting</h2>
+<div id="question-1" class="section level3">
+<h3>Question 1</h3>
+<div id="first-log-into-duke-compute-cluster-dcc-by-typing-below-in-your-terminal" class="section level4">
+<h4><em>First log into Duke Compute Cluster (DCC) by typing below in your terminal</em></h4>
+<pre class="bash"><code>ssh jl915@dcc-slogin-01.oit.duke.edu</code></pre>
+</div>
+</div>
+<div id="question-2-1" class="section level3">
+<h3>Question 2</h3>
+<div id="once-you-confirm-that-you-are-in-your-home-directory-let-us-now-generate-a-simple-shell-script-named-myscript.sh.-follow-the-below-steps" class="section level4">
+<h4><em>Once you confirm that you are in your home directory, let us now generate a simple shell script named <code>myscript.sh</code>. Follow the below steps:</em></h4>
+<pre class="bash"><code>echo &#39;#!/bin/sh&#39; &gt; myscript.sh
+echo &#39;echo Hello World!&#39; &gt;&gt; myscript.sh</code></pre>
+</div>
+</div>
+<div id="question-3-1" class="section level3">
+<h3>Question 3</h3>
+<div id="run-the-code-below-which-prints-the-file-path-of-your-new-script.-what-is-your-output" class="section level4">
+<h4><em>Run the code below, which prints the file path of your new script. What is your output?</em></h4>
+<p>The output of this command is: <strong><code>/hpc/home/jl915/BME590/myscript.sh</code></strong></p>
+<pre class="bash"><code>readlink -f myscript.sh</code></pre>
+</div>
+</div>
+<div id="question-4-1" class="section level3">
+<h3>Question 4</h3>
+<div id="who-has-the-permission-to-read-this-script-who-can-write-in-this-script-who-can-execute-this-script" class="section level4">
+<h4><em>Who has the permission to read this script? Who can write in this script? Who can execute this script?</em></h4>
+<pre class="bash"><code>ls -l myscript.sh</code></pre>
+<p>The result is <code>-rw-r--r--. 1 jl915 dukeusers 28 Jan 28 20:18 myscript.sh</code>. This means the Owner (me:jl915), the Group (dukeusers) and other users all have the permission to read this file. Only the Owner (jl915) can write in the script. No one has the permission to execute it.</p>
+</div>
+</div>
+<div id="question-5-1" class="section level3">
+<h3>Question 5</h3>
+<div id="change-the-permission-setting-so-that-everyone-can-execute-this-script.-check-if-the-permission-has-successfully-modified.-what-is-printed-as-the-output" class="section level4">
+<h4><em>Change the permission setting so that everyone can execute this script. Check if the permission has successfully modified. What is printed as the output?</em></h4>
+<pre class="bash"><code>chmod -R 755 myscript.sh #7=4+2+1, read=4, write=2, execute=1
+ls -l myscript.sh</code></pre>
+<p>The result is <code>-rwxr-xr-x. 1 jl915 dukeusers 28 Jan 28 20:18 myscript.sh</code>. Here everyone has the permission to read and execute, but only the Owner has the permission to write.</p>
+</div>
+</div>
+<div id="question-6-1" class="section level3">
+<h3>Question 6</h3>
+<div id="now-execute-this-script.-what-is-printed" class="section level4">
+<h4><em>Now execute this script. What is printed?</em></h4>
+<pre class="bash"><code>sh myscript.sh</code></pre>
+<p>The output is <code>Hello World!</code></p>
+</div>
+</div>
+<div id="question-7-1" class="section level3">
+<h3>Question 7</h3>
+<div id="write-a-new-shell-script-named-read_counter.sh-that-can-count-the-number-of-reads-from-an-input-vcf-file.-we-will-use-the-same-vcf-file-that-we-used-in-previous-problems." class="section level4">
+<h4><em>Write a new shell script named read_counter.sh that can count the number of reads from an input vcf file. We will use the same vcf file that we used in previous problems.</em></h4>
+<div id="first-we-need-to-download-the-vcf-file-to-our-dcc-home-directory.-run-the-command-from-question-14-from-above-in-your-dcc-home-directory." class="section level5">
+<h5>(1) <em>First, we need to download the vcf file to our DCC home directory. Run the command from Question 14 from above in your DCC home directory.</em></h5>
+<pre class="bash"><code>wget ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/pilot_data/release/2010_07/trio/snps/trio.2010_06.ychr.sites.vcf.gz</code></pre>
+</div>
+<div id="unzip-the-file" class="section level5">
+<h5>(2) <em>Unzip the file</em></h5>
+<pre class="bash"><code>gzip -cd trio.2010_06.ychr.sites.vcf.gz &gt; trio.2010_06.ychr.sites.vcf</code></pre>
+</div>
+<div id="write-a-new-shell-script-named-read_counter.sh-to-count-the-number-of-the-reads-from-our-vcf-file." class="section level5">
+<h5>(3) <em>Write a new shell script named read_counter.sh to count the number of the reads from our vcf file.</em></h5>
+<pre class="bash"><code>echo &#39;#!/bin/sh&#39; &gt; read_count.sh
+echo &#39;echo &quot;The number of reads in this vcf file is: $(sed -n /^Y/p trio.2010_06.ychr.sites.vcf | wc -l)&quot;&#39; &gt;&gt; read_count.sh
+sh read_count.sh</code></pre>
+<p>The output is <code>The number of reads in this vcf file is: 959</code>. Here I used the <code>sed</code> command to search for the lines starting with ‘Y’ and then count the number of lines.</p>
+</div>
+</div>
 </div>
 </div>
 
